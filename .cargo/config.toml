@@ -1,0 +1,25 @@
+[build]
+target = "xtensa-esp32-none-elf"
+
+[target.'cfg(target_arch = "xtensa")']
+runner = "./flash.wsl.sh"
+rustflags = [
+  # GNU LD
+  "-C", "link-arg=-Wl,-Tlinkall.x",
+  "-C", "link-arg=-nostartfiles",
+
+  # LLD
+  # "-C", "link-arg=-Tlinkall.x",
+  # "-C", "linker=rust-lld",
+]
+
+[unstable]
+build-std = ["core"]
+#build-std-features = ["panic_immediate_abort"] # Required for older ESP-IDF versions without a realpath implementation
+
+[alias]
+#f = "espflash flash -p /dev/ttyUSB0 -B 921600"
+# use cargo run
+
+#m = "espmonitor --target xtensa-esp32-espidf /dev/ttyS1"
+# use ./monitor.wsl.sh
