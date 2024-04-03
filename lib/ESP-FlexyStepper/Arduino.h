@@ -12,10 +12,14 @@ using byte = uint8_t;
 using BaseType_t = uint32_t;
 using ulong = uint32_t;
 
-constexpr uint8_t OUTPUT_OPEN_DRAIN = 0x02;
-constexpr uint8_t OUTPUT = 0x01;
-constexpr uint8_t INPUT = 0x00;
-constexpr uint8_t INPUT_PULLUP = 0x02;
+constexpr uint8_t OUTPUT = 0x03;
+constexpr uint8_t PULLUP = 0x04;
+constexpr uint8_t INPUT_PULLUP = 0x05;
+constexpr uint8_t PULLDOWN = 0x08;
+constexpr uint8_t INPUT_PULLDOWN = 0x09;
+constexpr uint8_t OPEN_DRAIN = 0x10;
+constexpr uint8_t OUTPUT_OPEN_DRAIN = 0x13;
+constexpr uint8_t ANALOG = 0xC0;
 
 constexpr uint8_t HIGH = 1;
 constexpr uint8_t LOW = 0;

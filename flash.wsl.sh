@@ -3,4 +3,4 @@
 source ./.env
 
 # run on windows host
-espflash.exe ${SERIAL_PORT} $(wslpath -w "${1}")
+espflash.exe --monitor ${SERIAL_PORT} $(wslpath -w "${1}")

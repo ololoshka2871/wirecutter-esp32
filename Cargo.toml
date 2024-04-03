@@ -44,11 +44,13 @@ esp-hal = { version = "0.16.0", features = [
     "embassy-executor-thread",
     "embassy-executor-interrupt",
     "embassy-time-timg0",
+    "eh1",
 ] }
 esp-println = { version = "0.9.1", features = ["log"] }
 fugit = "0.3.7"
 nb = "1.1.0"
 static_cell = { version = "2.0.0", features = ["nightly"] }
+heapless = "0.8.0"
 
 # stepper motor driver
 esp-flexystepper-rs = { path = "lib/ESP-FlexyStepper" }

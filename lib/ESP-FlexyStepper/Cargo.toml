@@ -5,5 +5,10 @@ authors = ["ololoshka2871 <SweetTreasure@2ch.hk>", "pkerspe"]
 edition = "2021"
 build = "build.rs"
 
+[dependencies]
+esp-hal = { version = "0.16.0", features = ["log", "esp32"] }
+embedded-hal = "1.0.0"
+esp-println = { version = "0.9.1", features = ["log"] }
+
 [build-dependencies]
 cc = { version = "1.0", features = ["parallel"] }

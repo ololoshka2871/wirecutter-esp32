@@ -60,10 +60,15 @@ async fn process_movement(steppers: [Arc<Mutex<CriticalSectionRawMutex, ESP_Flex
     }
 }
 
-fn make_stepper(step_pin: u8, dir_pin: u8, od: bool, max_speed: f32, ac: f32, dac: f32) -> Arc<Mutex<CriticalSectionRawMutex, ESP_FlexyStepper>> {
-    let mut stepper = unsafe {
-        ESP_FlexyStepper::new()
-    };
+fn make_stepper(
+    step_pin: u8,
+    dir_pin: u8,
+    od: bool,
+    max_speed: f32,
+    ac: f32,
+    dac: f32,
+) -> Arc<Mutex<CriticalSectionRawMutex, ESP_FlexyStepper>> {
+    let mut stepper = unsafe { ESP_FlexyStepper::new() };
 
     unsafe {
         stepper.connectToPins(step_pin, dir_pin, od);
@@ -87,11 +92,30 @@ async fn main(_spawner: Spawner) {
     init_heap();
     embassy::init(&clocks, timg0);
 
+    let cpu_speed_mhz = clocks.cpu_clock.to_MHz();
+    println!("CPU freq={} MHz", cpu_speed_mhz);
+
+    esp_flexystepper_rs::set_current_cpu_speed(cpu_speed_mhz);
+    esp_flexystepper_rs::register_gpio({
+        use alloc::boxed::Box;
+        use embedded_hal::digital::OutputPin;
+
+        type PinT = Box<dyn OutputPin<Error = core::convert::Infallible>>;
+
+        let mut map: alloc::collections::BTreeMap<_, PinT> = alloc::collections::BTreeMap::new();
+        map.insert(17, Box::new(io.pins.gpio17.into_push_pull_output()));
+        map.insert(18, Box::new(io.pins.gpio18.into_push_pull_output()));
+        map.insert(15, Box::new(io.pins.gpio15.into_push_pull_output()));
+        map.insert(16, Box::new(io.pins.gpio16.into_push_pull_output()));
+
+        map
+    });
+
     let mut cpu_control = CpuControl::new(system.cpu_control);
 
     let steppers = [
-        make_stepper(34, 35, false, 100.0, 800.0, 800.0), // X
-        make_stepper(36, 39, false, 100.0, 800.0, 800.0), // Y
+        make_stepper(17, 18, false, 10000.0, 8000.0, 8000.0), // X
+        make_stepper(15, 16, false, 10000.0, 8000.0, 8000.0), // Y
     ];
 
     let c_steppers = steppers.clone();
@@ -135,22 +159,26 @@ async fn main(_spawner: Spawner) {
         ticker.next().await;
         pwm_pin1.set_timestamp((100 - 3) * MUL); // inv 0%
         unsafe {
-            steppers[0].lock().await.moveRelativeInMillimeters(10.0);
+            steppers[0].lock().await.setTargetPositionRelativeInMillimeters(110.0);
+            steppers[1].lock().await.setTargetPositionRelativeInMillimeters(90.0);
         }
         ticker.next().await;
         pwm_pin2.set_timestamp((10 + 3) * MUL); // 10%
         unsafe {
-            steppers[1].lock().await.moveRelativeInMillimeters(-10.0);
+            steppers[0].lock().await.setTargetPositionRelativeInMillimeters(-90.0);
+            steppers[1].lock().await.setTargetPositionRelativeInMillimeters(-100.0);
         }
         ticker.next().await;
         pwm_pin1.set_timestamp((90 - 3) * MUL); // inv 10%
         unsafe {
-            steppers[0].lock().await.moveRelativeInMillimeters(-10.0);
+            steppers[0].lock().await.setTargetPositionRelativeInMillimeters(110.0);
+            steppers[1].lock().await.setTargetPositionRelativeInMillimeters(90.0);
         }
         ticker.next().await;
         pwm_pin2.set_timestamp((0 + 3) * MUL); // 0%
         unsafe {
-            steppers[1].lock().await.moveRelativeInMillimeters(10.0);
+            steppers[0].lock().await.setTargetPositionRelativeInMillimeters(-90.0);
+            steppers[1].lock().await.setTargetPositionRelativeInMillimeters(-100.0);
         }
     }
 }

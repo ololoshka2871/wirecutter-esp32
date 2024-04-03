@@ -26,10 +26,15 @@ pub type byte = u8;
 pub type BaseType_t = u32;
 pub type ulong = ::core::ffi::c_ulong;
 
-pub const OUTPUT_OPEN_DRAIN: u8 = 2;
-pub const OUTPUT: u8 = 1;
-pub const INPUT: u8 = 0;
-pub const INPUT_PULLUP: u8 = 2;
+pub const OUTPUT: u8 = 0x03;
+pub const PULLUP: u8 = 0x04;
+pub const INPUT_PULLUP: u8 = 0x05;
+pub const PULLDOWN: u8 = 0x08;
+pub const INPUT_PULLDOWN: u8 = 0x09;
+pub const OPEN_DRAIN: u8 = 0x10;
+pub const OUTPUT_OPEN_DRAIN: u8 = 0x13;
+pub const ANALOG: u8 = 0xC0;
+
 pub const HIGH: u8 = 1;
 pub const LOW: u8 = 0;
 
@@ -93,6 +98,7 @@ pub struct ESP_FlexyStepper {
 }
 
 extern "C" {
+    /*
     #[link_name = "\u{1}_ZN16ESP_FlexyStepper14startAsServiceEi"]
     pub fn ESP_FlexyStepper_startAsService(
         this: *mut ESP_FlexyStepper,
@@ -104,6 +110,7 @@ extern "C" {
 
     #[link_name = "\u{1}_ZN16ESP_FlexyStepper18isStartedAsServiceEv"]
     pub fn ESP_FlexyStepper_isStartedAsService(this: *mut ESP_FlexyStepper) -> bool;
+    */
 
     #[link_name = "\u{1}_ZN16ESP_FlexyStepper13connectToPinsEhhb"]
     pub fn ESP_FlexyStepper_connectToPins(
@@ -454,6 +461,7 @@ extern "C" {
     pub fn ESP_FlexyStepper_ESP_FlexyStepper_destructor(this: *mut ESP_FlexyStepper);
 }
 impl ESP_FlexyStepper {
+    /*
     #[inline]
     pub unsafe fn startAsService(&mut self, coreNumber: ::core::ffi::c_int) -> bool {
         ESP_FlexyStepper_startAsService(self, coreNumber)
@@ -466,6 +474,7 @@ impl ESP_FlexyStepper {
     pub unsafe fn isStartedAsService(&mut self) -> bool {
         ESP_FlexyStepper_isStartedAsService(self)
     }
+    */
     #[inline]
     pub unsafe fn connectToPins(
         &mut self,
@@ -929,51 +938,4 @@ impl ESP_FlexyStepper {
     }
 }
 
-extern "C" {
-    #[link_name = "\u{1}_Z15disableCore0WDTv"]
-    pub fn disableCore0WDT();
-
-    #[link_name = "\u{1}_Z15disableCore1WDTv"]
-    pub fn disableCore1WDT();
-
-    #[link_name = "\u{1}_Z23xTaskCreatePinnedToCorePFvPvEPKcjS_jPS_j"]
-    pub fn xTaskCreatePinnedToCore(
-        task: Task_t,
-        name: *const ::core::ffi::c_char,
-        stackSize: u32,
-        param: *mut ::core::ffi::c_void,
-        priority: u32,
-        taskHandle: *mut TaskHandle_t,
-        coreID: BaseType_t,
-    );
-
-    #[link_name = "\u{1}_Z11vTaskDeletePv"]
-    pub fn vTaskDelete(h: TaskHandle_t);
-
-    #[link_name = "\u{1}_Z27uxTaskGetStackHighWaterMarkPv"]
-    pub fn uxTaskGetStackHighWaterMark(h: TaskHandle_t) -> ::core::ffi::c_long;
-
-    #[link_name = "\u{1}_Z12configASSERTPv"]
-    pub fn configASSERT(h: TaskHandle_t);
-
-    #[link_name = "\u{1}_Z7pinModehh"]
-    pub fn pinMode(pin: u8, mode: u8);
-
-    #[link_name = "\u{1}_Z12digitalWritehh"]
-    pub fn digitalWrite(pin: u8, value: u8);
-
-    #[link_name = "\u{1}_Z11digitalReadh"]
-    pub fn digitalRead(pin: u8) -> u8;
-
-    #[link_name = "\u{1}_Z5delayj"]
-    pub fn delay(ms: u32);
-
-    #[link_name = "\u{1}_Z6millisv"]
-    pub fn millis() -> ulong;
-
-    #[link_name = "\u{1}_Z6microsv"]
-    pub fn micros() -> ulong;
-}
-
 unsafe impl Send for ESP_FlexyStepper {}
-    
