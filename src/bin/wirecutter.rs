@@ -2,17 +2,21 @@
 #![no_main]
 #![feature(type_alias_impl_trait)]
 
+extern crate alloc;
+
+use alloc::sync::Arc;
+use core::mem::MaybeUninit;
+
 use embassy_executor::Spawner;
-use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, signal::Signal};
+use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex};
 use embassy_time::{Duration, Ticker};
-use embedded_hal_02::digital::v2::OutputPin;
 use esp_backtrace as _;
 use esp_hal::{
     clock::ClockControl,
     cpu_control::{CpuControl, Stack},
     embassy::{self, executor::Executor},
     get_core,
-    gpio::{GpioPin, Output, PushPull, IO},
+    gpio::IO,
     mcpwm::{operator::PwmPinConfig, timer::PwmWorkingMode, PeripheralClockConfig, MCPWM},
     peripherals::Peripherals,
     prelude::*,
@@ -21,27 +25,54 @@ use esp_hal::{
 use esp_println::println;
 use static_cell::make_static;
 
+use esp_flexystepper_rs::ESP_FlexyStepper;
+
 const MUL: u16 = 100;
 
 static mut APP_CORE_STACK: Stack<8192> = Stack::new();
 
-/// Waits for a message that contains a duration, then flashes a led for that
-/// duration of time.
-#[embassy_executor::task]
-async fn control_led(
-    mut led: GpioPin<Output<PushPull>, 13>,
-    _control: &'static Signal<CriticalSectionRawMutex, bool>,
-) {
-    println!("Starting control_led() on core {}", get_core() as usize);
-    let mut ticker = Ticker::every(Duration::from_secs(1));
-    loop {
-        ticker.next().await;
-        esp_println::println!("LED on");
-        led.set_low().unwrap();
-        ticker.next().await;
-        esp_println::println!("LED off");
-        led.set_high().unwrap();
+#[global_allocator]
+static ALLOCATOR: esp_alloc::EspHeap = esp_alloc::EspHeap::empty();
+
+fn init_heap() {
+    const HEAP_SIZE: usize = 32 * 1024;
+    static mut HEAP: MaybeUninit<[u8; HEAP_SIZE]> = MaybeUninit::uninit();
+
+    unsafe {
+        ALLOCATOR.init(HEAP.as_mut_ptr() as *mut u8, HEAP_SIZE);
     }
+}
+
+#[embassy_executor::task]
+async fn process_movement(steppers: [Arc<Mutex<CriticalSectionRawMutex, ESP_FlexyStepper>>; 2]) {
+    println!(
+        "Starting process_movement() on core {}",
+        get_core() as usize
+    );
+
+    loop {
+        for stepper in steppers.iter() {
+            let mut stepper = stepper.lock().await;
+            unsafe {
+                stepper.processMovement();
+            }
+        }
+    }
+}
+
+fn make_stepper(step_pin: u8, dir_pin: u8, od: bool, max_speed: f32, ac: f32, dac: f32) -> Arc<Mutex<CriticalSectionRawMutex, ESP_FlexyStepper>> {
+    let mut stepper = unsafe {
+        ESP_FlexyStepper::new()
+    };
+
+    unsafe {
+        stepper.connectToPins(step_pin, dir_pin, od);
+        stepper.setSpeedInStepsPerSecond(max_speed);
+        stepper.setAccelerationInStepsPerSecondPerSecond(ac);
+        stepper.setDecelerationInStepsPerSecondPerSecond(dac);
+    }
+
+    Arc::new(Mutex::new(stepper))
 }
 
 #[main]
@@ -53,19 +84,22 @@ async fn main(_spawner: Spawner) {
     let io = IO::new(peripherals.GPIO, peripherals.IO_MUX);
 
     let timg0 = TimerGroup::new(peripherals.TIMG0, &clocks);
+    init_heap();
     embassy::init(&clocks, timg0);
 
     let mut cpu_control = CpuControl::new(system.cpu_control);
 
-    let led_ctrl_signal = &*make_static!(Signal::new());
+    let steppers = [
+        make_stepper(34, 35, false, 100.0, 800.0, 800.0), // X
+        make_stepper(36, 39, false, 100.0, 800.0, 800.0), // Y
+    ];
 
-    let led = io.pins.gpio13.into_push_pull_output();
-
+    let c_steppers = steppers.clone();
     let _guard = cpu_control
         .start_app_core(unsafe { &mut APP_CORE_STACK }, move || {
             let executor = make_static!(Executor::new());
             executor.run(|spawner| {
-                spawner.spawn(control_led(led, led_ctrl_signal)).ok();
+                spawner.spawn(process_movement(c_steppers)).ok();
             });
         })
         .unwrap();
@@ -95,19 +129,28 @@ async fn main(_spawner: Spawner) {
         .unwrap();
     mcpwm.timer0.start(timer_clock_cfg);
 
-    // pin will be high 50% of the time
-    //pwm_pin.set_timestamp(50);
-
     println!("Starting pwm control on core {}", get_core() as usize);
     let mut ticker = Ticker::every(Duration::from_secs(3));
     loop {
         ticker.next().await;
         pwm_pin1.set_timestamp((100 - 3) * MUL); // inv 0%
+        unsafe {
+            steppers[0].lock().await.moveRelativeInMillimeters(10.0);
+        }
         ticker.next().await;
         pwm_pin2.set_timestamp((10 + 3) * MUL); // 10%
+        unsafe {
+            steppers[1].lock().await.moveRelativeInMillimeters(-10.0);
+        }
         ticker.next().await;
         pwm_pin1.set_timestamp((90 - 3) * MUL); // inv 10%
+        unsafe {
+            steppers[0].lock().await.moveRelativeInMillimeters(-10.0);
+        }
         ticker.next().await;
         pwm_pin2.set_timestamp((0 + 3) * MUL); // 0%
+        unsafe {
+            steppers[1].lock().await.moveRelativeInMillimeters(10.0);
+        }
     }
 }

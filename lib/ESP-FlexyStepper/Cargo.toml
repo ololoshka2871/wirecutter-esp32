@@ -1,0 +1,9 @@
+[package]
+name = "esp-flexystepper-rs"
+version = "0.0.0"
+authors = ["ololoshka2871 <SweetTreasure@2ch.hk>", "pkerspe"]
+edition = "2021"
+build = "build.rs"
+
+[build-dependencies]
+cc = { version = "1.0", features = ["parallel"] }

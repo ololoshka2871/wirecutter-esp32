@@ -1,0 +1,3 @@
+[submodule "lib/ESP-FlexyStepper/ESP-FlexyStepper-dist"]
+	path = lib/ESP-FlexyStepper/ESP-FlexyStepper-dist
+	url = https://github.com/pkerspe/ESP-FlexyStepper.git

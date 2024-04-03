@@ -9,12 +9,12 @@ rustflags = [
   "-C", "link-arg=-nostartfiles",
 
   # LLD
-  # "-C", "link-arg=-Tlinkall.x",
-  # "-C", "linker=rust-lld",
+  #"-C", "link-arg=-Tlinkall.x",
+  #"-C", "linker=rust-lld",
 ]
 
 [unstable]
-build-std = ["core"]
+build-std = ["core", "alloc"]
 #build-std-features = ["panic_immediate_abort"] # Required for older ESP-IDF versions without a realpath implementation
 
 [alias]
