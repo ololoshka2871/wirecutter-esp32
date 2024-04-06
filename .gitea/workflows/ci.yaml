@@ -1,0 +1,23 @@
+name: Build firmware
+on: 
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: esp32-rust
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+
+      - name: Build
+        run: |
+          cargo build --release
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: elbike-power-meter.elf
+          path: target/xtensa-esp8266-none-elf/release/elbike-power-meter
+          if-no-files-found: error
