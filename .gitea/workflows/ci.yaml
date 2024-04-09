@@ -17,9 +17,8 @@ jobs:
         run: |
           cargo build --release
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+      - uses: akkuman/gitea-release-action@v1
         with:
-          name: elbike-power-meter.elf
-          path: target/xtensa-esp8266-none-elf/release/elbike-power-meter
-          if-no-files-found: error
+          body: This is an automatic release!
+          prerelease: true
+          files: target/xtensa-esp32-none-elf/debug/wirecutter
