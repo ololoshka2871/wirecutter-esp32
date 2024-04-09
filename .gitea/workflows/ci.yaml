@@ -21,4 +21,4 @@ jobs:
         with:
           body: This is an automatic release!
           prerelease: true
-          files: target/xtensa-esp32-none-elf/debug/wirecutter
+          files: target/xtensa-esp32-none-elf/release/wirecutter
